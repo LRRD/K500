@@ -13,10 +13,10 @@
   LCD Display:            NHD-0216K3Z-NSW-BBW-V3            
   DAC:                    MCP 4725 Adafruit version
   Arduino:                Arduino Nano V3 (328P 5V)
-  Pump:                   EX489-3-449
+  Pump:                   EX489-3-449 
   Calibration spreadsheets and supporting documentation located in parent folder on Sandbar titled: "Data Documents Installers"             
   Stripped down encoder code to bare bones and moved all inputs to digital pins that aren't PWM. This previously used the analog pins that we may need for the DAC in the future.
-  Added in LCD code from RS-232 display code
+  Added in LCD code from RS-232 display code - created using hex codes from product data sheet
   Added in DAC code for MCP 4725 Adafruit version
   Volumetric test input into excel: A,B,C Flow values found and input
   Implemented ml/s calculation and readout
@@ -60,9 +60,12 @@
   Hydrograph indicator
   Removed "Flow Zeroed" text, there was no "Flow Max" text and it is self-explanatory
   Actual flow displays next to setpoint so user can see how it is dynamically adjusting to maintain desired flow
-  Copied 3/8" code, duration and flow limit values changed for 1/2" code
+  Copied 1/2" code, duration and flow limit values changed for 3/8" code
   Removed unused variables and sections of code
-
+  Added atomic.h and atomic block routine to prevent erroneous shutoffs of flow
+  Changed order of bootup check during encoder rotation check, bug fix for case that only happens on first click after bootup
+  Changed timer to roll over after 99 hours
+  
 */
 
 ////////////////////////////////////////////////////////////////////////////
@@ -70,26 +73,26 @@
 ////////////////////////////////////////////////////////////////////////////
 #include <Wire.h>//Include the Wire library to talk I2C
 #define MCP4725_ADDR 0x62 //Unique address for MCP4725 Adafruit version 
-
+#include <util/atomic.h> // this library includes the ATOMIC_BLOCK macro.
 
 ////////////////////////////////////////////////////////////////////////////
 // Magic Numbers  & Global Variables ///////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 
 //Encoder
-static uint8_t cw_gray_codes[4] = { 2, 0, 3, 1 };   //The sequence of gray codes in the increasing and decreasing directions.
+static uint8_t cw_gray_codes[4] = { 2, 0, 3, 1 }; 	//The sequence of gray codes in the increasing and decreasing directions.
 static uint8_t ccw_gray_codes[4] = { 1, 3, 0, 2 };  //Gray code sequence
-static uint8_t previous_gray_code = 0;              //The gray code we last read from the encoder.
+static uint8_t previous_gray_code = 0;				      //The gray code we last read from the encoder.
 int released;                                       //Used for encoder button presses
 
 //Input & Output variables
-uint32_t last_display_update_ms = 0;                //Used to refresh the lcd Screen
+uint32_t last_display_update_ms = 0;				        //Used to refresh the lcd Screen
 uint32_t last_display_update_ms2 = 0;               //Used to run hydrograph
-const uint8_t encoderswitch = 7;                    //Encoder poin reference
-const uint8_t channelB = 6;                         //Encoder pin reference
-const uint8_t channelA = 4;                         //Encoder pin reference
-const uint8_t led = 3;                              //LED pin reference
-const uint8_t led2 = 5;                             //LED pin reference
+const uint8_t encoderswitch = 7;					          //Encoder poin reference
+const uint8_t channelB = 6;							            //Encoder pin reference
+const uint8_t channelA = 4;							            //Encoder pin reference
+const uint8_t led = 3;								              //LED pin reference
+const uint8_t led2 = 5;								              //LED pin reference
 const uint8_t paddlewheel = 2;                      //Pin assignment method that uses the least space
 
 //Update variables
@@ -114,7 +117,7 @@ uint32_t totalSec = 0;                              //Total seconds the Arduino 
 volatile uint32_t nowTime = 0;                      //Time marked during the interrupt routine
 float smoothed = 300.0;                             //Duration value following exponentional smoothing process
 float lastsmoothed = 300.0;                         //Last duration value following exponentional smoothing process
-float timesince = 0.0;                              //ms since last paddlewheel pulse
+volatile float timesince = 0.0;                              //ms since last paddlewheel pulse
 float timesince2 = 0.0;                             //Variable for time since moving from 0 flow to flow
 uint16_t refreshtime = 500;                         //Time in ms between each refresh/calculation
 
@@ -128,7 +131,7 @@ float KPatMAGhigh = 0.75;                           //KP value to be used at err
 
 //Limit variables
 const uint16_t setmax = 410;                        //Max setpoint
-const uint8_t minFlow = 50;                         //Min setpoint
+const uint8_t minFlow = 55;                         //Min setpoint
 const uint16_t maxhydro = 120;                      //Max number of 30s intervals in a hydrograph (Increasing uses lots of memory)
 uint16_t slowturn = 300;                            //Ms length of slowest paddlewheen rotation duration
 uint16_t disconnected = 10000;                      //Ms with no input cutoff point
@@ -140,12 +143,16 @@ uint16_t totalLiter = 0;                            //Used to display total L of
 bool indicator = false;                             //Used to switch between + and * for hydrograph indicator
 uint32_t cumulativeVolume = 0;                      //Total amount of ml/s of water pumped since last restart
 bool bootup = true;                                 //Used for a one time run on startup, different than setup()
+uint32_t runtime = 0;                               //Used for timer
+uint16_t hour;                                      //""
+uint16_t minute;                                    //""
+uint16_t second;                                    //""
 
 //Other variables
-uint8_t menu = 0;                                   //Switch case variable for menu controls
-uint16_t clicker = 500;                             //Ms delay for all button presses and menu navigation rotations
-bool setinput = false;                              //Used to run hydrographs
-volatile bool inputread = false;                    //Global flag to indicate paddlewheel reading
+uint8_t menu = 0;									                  //Switch case variable for menu controls
+uint16_t clicker = 500;								              //Ms delay for all button presses and menu navigation rotations
+bool setinput = false;								              //Used to run hydrographs
+volatile bool inputread = false;			              //Global flag to indicate paddlewheel reading
 bool recentDC = false;                              //Recent disconnect on paddlewheel input bool
 
 
@@ -306,37 +313,40 @@ void timing() //Runs when ISR is called from interrupt pin input
 static void check_encoder() // Look for encoder rotation by observing graycode on channel A & B
 {
   int gray_code = ((digitalRead(channelA) == HIGH) << 1) | (digitalRead(channelB) == HIGH);
-  if (gray_code != previous_gray_code)       //Encoder clicked in a direction
+  if (bootup) //On bootup, first time check encoder runs it thought it was clicked towards increase flow
   {
-    if (gray_code == cw_gray_codes[previous_gray_code])     //Knob twist CW
+    setpoint = 0;
+    bootup = false;
+  }
+  else
+  {
+    if (gray_code != previous_gray_code)       //Encoder clicked in a direction
     {
-      if (setpoint < minFlow) //At zero flow setpoint
+      if (gray_code == cw_gray_codes[previous_gray_code])     //Knob twist CW
       {
-        setpoint = minFlow;   //Jump to min flow setpoint
+        if (setpoint < minFlow) //At zero flow setpoint
+        {
+          setpoint = minFlow;   //Jump to min flow setpoint
+        }
+        else //Not at zero flow setpoint
+        {
+          setpoint++;   //Increase setpoint by 1
+        }
       }
-      else //Not at zero flow setpoint
-      {
-        setpoint++;   //Increase setpoint by 1
-      }
-    }
 
-    else if (gray_code == ccw_gray_codes[previous_gray_code])     //Knob twist CCW
-    {
-      if (setpoint == minFlow)  //At min flow setpoint
+      else if (gray_code == ccw_gray_codes[previous_gray_code])     //Knob twist CCW
       {
-        setpoint = 0;           //Jump to zero flow setpoint
+        if (setpoint == minFlow)  //At min flow setpoint
+        {
+          setpoint = 0;           //Jump to zero flow setpoint
+        }
+        else    //Not at min
+        {
+          setpoint--;     //Decrease setpoint by 1
+        }
       }
-      else    //Not at min
-      {
-        setpoint--;     //Decrease setpoint by 1
-      }
-    }
-    previous_gray_code = gray_code; //Stores current gray code for future comparison
-    setpoint = constrain(setpoint, 0, setmax); //Flow maxes at setmax
-    if (bootup) //On bootup, first time check encoder runs it thought it was clicked towards increase flow
-    {
-      setpoint = 0;
-      bootup = false;
+      previous_gray_code = gray_code; //Stores current gray code for future comparison
+      setpoint = constrain(setpoint, 0, setmax); //Flow maxes at setmax
     }
   }
 }
@@ -355,6 +365,7 @@ void refresh_lcd()
     computedisplay(); //Refresh display
     last_display_update_ms = millis(); //Assign current time to last update time
     timer();  //Display timer
+    printtimer();
     uint16_t currentMls = (setpoint); //Ml/s / 2 because this runs every half second
     cumulativeVolume = (cumulativeVolume + currentMls); //Add current mls to total mls
     literdisplay(); //Display total liter
@@ -438,31 +449,29 @@ void timer()
 {
   if (!setinput) //Running time during normal setpoint operation
   {
-    totalSec = (millis() / 1000); //Total seconds arduino has been powered on for
+    totalSec = (millis() - runtime) / 1000;   //Time is has been powered on for convert to seconds
   }
   else  //Hydrograph time during hydrograph operation
   {
     totalSec = (millis() - hydroStartTime) / 1000; //Total time - time at start of hydro (seconds)
   }
-  uint16_t hour = (totalSec / 3600);          //Number of hours elapsed
-  uint16_t remainder = (totalSec % 3600);     //Remainder of Sec that don't total an hour
-  uint16_t minute = (remainder / 60);         //Number of minutes elapsed
-  remainder = (remainder % 60);               //Remainder of Sec that don't toal a minute
-  uint16_t second = (remainder);              //Number of seconds elapsed
-  cursorLine2();                              //Set cursor to line 2
-  //Display elapsed time since last restart
+  
+  hour = totalSec / 3600;           //Seconds in an hour
+  uint16_t remainder = totalSec % 3600;               //Remainder
+  minute = remainder / 60;           //Seconds in a minute
+  remainder = remainder % 60;                 //Remainder
+  second = remainder;                //Seconds
+
   if (hour > 99)
   {
-    hour = 99;
+    runtime = millis();
+    timer();
   }
-  if (minute > 59)
-  {
-    minute = 59;
-  }
-  if (second > 59)
-  {
-    second = 59;
-  }
+}
+
+void printtimer()
+{
+  cursorLine2();                              //Set cursor to line 2
   if (hour < 10)
   {
     Serial.print(F("0"));
@@ -542,47 +551,47 @@ void compute() //How much do we adjust the output by?
   //Moving from no flow, to flow
   if ((lastsetpoint == 0) && (setpoint > 0)) //Reset time since last pulse
   {
-    lastzero = micros();
+    lastzero = millis();
   }
   lastsetpoint = setpoint;  //Assign current setpoint to lastsetpoint for updating
+  
+  timesince = (micros() - nowTime) / 1000.0;   //Time since last pulse is converted from microseconds
+  timesince2 = millis() - lastzero;  //Time since last zero
 
-  //Time since last pulse
-  if ((micros() - nowTime) < 0) //Micros rolled over
-  {
-    timesince = 0.0; //Reset time since because micros rolled over
-  }
-  else
-  {
-    timesince = (micros() - nowTime) / 1000.0;  //Time since last pulse is converted from microseconds
-  }
-
-  //Time since moving from no flow -> some flow
-  if ((micros() - lastzero) < 0) //Micros rolled over
-  {
-    timesince2 = 0.0; //Reset time since because micros rolled over
-  }
-  else
-  {
-    timesince2 = (micros() - lastzero) / 1000.0;  //Time since last pulse is converted from microseconds
-  }
   if (((timesince > disconnected) && (timesince2 > disconnected)) && (setpoint > 0)) //Move than x sec since last pulse && more than x sec since moving from 0 flow to > 0 flow
   {
-    if (!recentDC)
+    /*
+     Troublesome troubleshooting - flow would stop and error sequence triggered at random time intervals hours into operation
+     Volatile variable 'nowTime' was updating as it was being read
+     For volatile variables longer than one byte such as nowTime (uint32_t) 8 bytes,
+     Variables that call that reference value get read one byte at a time, and the interrrupt can change the rest of the values while it is reading the first
+     Atomic block pauses the ISR while we read timesince, which references nowTime
+     It doesnt always use atomic block, or it would miss many PW pulses
+     Atomic block is used only to double-check and eliminate possibility of false error state
+     It misses one, or a few pulses while atomically blocked, but recovers quickly
+     */
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)     //Block ISR and double-check error state before triggering sequence
     {
-      setpoint = 0; //Set it to zero and display error code
-      output = 0;
-      writePWM2();
-      clearLCD();
-      cursorHome();
-      Serial.print(F("Sensor Error")); //Let the user know that there is an issue with the sensor
-      cursorLine2();
-      Serial.print(F("No Sensor Input"));
-      delay(5000);
-      clearLCD();
-      recentDC = true; //Flip bool to indicate that the sensor disconnect has already been reported
-      setinput = false;
-      menu = 0;
-      computedisplay();
+      timesince = (micros() - nowTime) / 1000.0;   //Time since last pulse is converted from microsecond
+    }
+    if (timesince > disconnected) //If there really is an error, trigger sequence
+    {
+      if (!recentDC)
+      {
+        setpoint = 0; //Set it to zero and display error code
+        output = 0;
+        writePWM2();
+        clearLCD();
+        cursorHome();
+        Serial.print(F("Sensor Error")); //Let the user know that there is an issue with the sensor
+        cursorLine2();
+        Serial.print(F("No Sensor Input"));
+        delay(5000);
+        clearLCD();
+        cursorHome();
+        recentDC = true;
+        menu = 0;
+      }
     }
   }
 
@@ -807,7 +816,7 @@ void menuselect()
 
           clearLCD();
           cursorHome();
-          Serial.print(F("  v1.0 Written  "));
+          Serial.print(F("v1.12.0  Written"));
           cursorLine2();
           Serial.print(F("By:  MAP  6/7/18"));
           delay(2500);

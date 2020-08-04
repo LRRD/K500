@@ -170,7 +170,7 @@ bool recentDC = false;                              //Recent disconnect on paddl
 //Detailed instructions are in the case creation
 const uint8_t flashy[] = { 40, 66, 105, 100, 90, 85, 82, 76, 66, 60, 58, 50, 45, 40, 25, 25 }; //8 Minutes
 const uint8_t classichigh[] = { 29, 38, 44, 54, 58, 67, 74, 80, 91, 102, 110, 117, 115, 113, 102, 99, 93, 84, 82, 80, 78, 73, 69, 66, 62, 58, 55, 51, 47, 44, 40, 37, 33, 25, 25 }; //17.5 Minutes
-const uint8_t megaflood[] = { 40, 68, 90, 110, 130, 150, 160, 170, 170, 165, 160, 155, 150, 146, 139, 132, 125, 121, 113, 107, 96, 89, 82, 75, 68, 60, 53, 51, 51, 45 }; //16.5 Minutes
+const uint8_t megaflood[] = { 40, 68, 90, 110, 130, 150, 160, 170, 170, 165, 160, 155, 150, 146, 139, 132, 125, 121, 113, 107, 96, 89, 82, 75, 68, 60, 53, 51, 51, 45 }; //15 Minutes
 const uint8_t classic[] = { 25, 30, 48, 56, 66, 82, 95, 106, 92, 80, 75, 72, 69, 65, 62, 60, 57, 55, 52, 50, 47, 45, 41, 38, 35, 31, 25, 25, 25 }; //14.5 Minutes
 const uint8_t flashyhigh[] = { 25, 126, 160, 155, 120, 102, 80, 60, 50, 40, 30, 25, 25 }; //6.5 Minutes
 const uint8_t regulated[] = { 40, 50, 50, 70, 70, 70, 70, 70, 70, 50, 50, 70, 70, 70, 70, 70, 50, 50, 50, 50, 70, 70, 70, 70, 50, 50, 50, 50, 50, 70, 70, 70, 70, 50, 50, 50, 70, 70, 70 }; //19.5 Minutes
@@ -205,49 +205,49 @@ void writePWM2() //Function to control analog voltage out from DAC
 ////////////////////////////////////////////////////////////////////////////
 // turn on display
 void displayOn() {
-  Serial.write(0xFE);
-  Serial.write(0x41);
+  Serial1.write(0xFE);
+  Serial1.write(0x41);
 }
 
 // move the cursor to the home position on line 2
 void cursorLine2() {
-  Serial.write(0xFE);
-  Serial.write(0x45);
-  Serial.write(0x40); //Hex code for row 2, column 1
+  Serial1.write(0xFE);
+  Serial1.write(0x45);
+  Serial1.write(0x40); //Hex code for row 2, column 1
 }
 
 // move the cursor to the home position on line 2
 void cursorTopRight() {
-  Serial.write(0xFE);
-  Serial.write(0x45);
-  Serial.write(0x0F); //Hex code for row 1, column 16
+  Serial1.write(0xFE);
+  Serial1.write(0x45);
+  Serial1.write(0x0F); //Hex code for row 1, column 16
 }
 
 // move the cursor to the home position on line 2
 void cursorBottomRight() {
-  Serial.write(0xFE);
-  Serial.write(0x45);
-  Serial.write(0x4F); //Hex code for row 2, column 16
+  Serial1.write(0xFE);
+  Serial1.write(0x45);
+  Serial1.write(0x4F); //Hex code for row 2, column 16
 }
 
 // move the cursor to the home position
 void cursorHome() {
-  Serial.write(0xFE);
-  Serial.write(0x46);
+  Serial1.write(0xFE);
+  Serial1.write(0x46);
 }
 
 // clear the LCD
 void clearLCD() {
-  Serial.write(0xFE);
-  Serial.write(0x51);
+  Serial1.write(0xFE);
+  Serial1.write(0x51);
 }
 
 // backspace and erase previous character
 void backSpace(int back) {
   for (int i = 0; i < back; i++)
   {
-    Serial.write(0xFE);
-    Serial.write(0x4E);
+    Serial1.write(0xFE);
+    Serial1.write(0x4E);
   }
 }
 
@@ -255,8 +255,8 @@ void backSpace(int back) {
 void cursorLeft(int left) {
   for (int i = 0; i < left; i++)
   {
-    Serial.write(0xFE);
-    Serial.write(0x49);
+    Serial1.write(0xFE);
+    Serial1.write(0x49);
   }
 }
 
@@ -264,35 +264,35 @@ void cursorLeft(int left) {
 void cursorRight(int right) {
   for (int i = 0; i < right; i++)
   {
-    Serial.write(0xFE);
-    Serial.write(0x4A);
+    Serial1.write(0xFE);
+    Serial1.write(0x4A);
   }
 }
 
 // set LCD contrast
 void setContrast(int contrast) {
-  Serial.write(0xFE);
-  Serial.write(0x52);
-  Serial.write(contrast); //Must be between 1 and 50
+  Serial1.write(0xFE);
+  Serial1.write(0x52);
+  Serial1.write(contrast); //Must be between 1 and 50
 }
 
 // turn on backlight
 void backlightBrightness(int brightness) {
-  Serial.write(0xFE);
-  Serial.write(0x53);
-  Serial.write(brightness); //Must be between 1 and 8
+  Serial1.write(0xFE);
+  Serial1.write(0x53);
+  Serial1.write(brightness); //Must be between 1 and 8
 }
 
 //Clear numbers on top line
 void clearDataTopLine() {
   cursorHome();
-  Serial.print(F("               ")); //Write 15 blanks and don't alter walking paddle
+  Serial1.print(F("               ")); //Write 15 blanks and don't alter walking paddle
 }
 
 //Clear numbers on bottom line
 void clearDataBottomLine() {
   cursorLine2();
-  Serial.print(F("                ")); //Write 16 blanks
+  Serial1.print(F("                ")); //Write 16 blanks
 }
 
 
@@ -404,9 +404,9 @@ void hydrorefresh()
     else if (index >= (indexmax - 1)) //The last flow setpoint is complete for the hydrograph
     {
       cursorHome(); //Update display when hydrograph completes
-      Serial.print(F("<  Hydrograph  >"));
+      Serial1.print(F("<  Hydrograph  >"));
       cursorLine2();
-      Serial.print(F("<   Complete   >"));
+      Serial1.print(F("<   Complete   >"));
       delay(2000);
       menu = 0; //Return to main display
       setpoint = 0;
@@ -435,8 +435,8 @@ void literdisplay()
   {
     cursorBottomRight();
     cursorLeft(4);
-    Serial.print(totalLiter);
-    Serial.print(F("L"));
+    Serial1.print(totalLiter);
+    Serial1.print(F("L"));
     lastLiter = totalLiter;
   }
 }
@@ -474,32 +474,32 @@ void printtimer()
   cursorLine2();                              //Set cursor to line 2
   if (hour < 10)
   {
-    Serial.print(F("0"));
-    Serial.print(hour);
+    Serial1.print(F("0"));
+    Serial1.print(hour);
   }
   else
   {
-    Serial.print(hour);
+    Serial1.print(hour);
   }
-  Serial.print(F(":"));
+  Serial1.print(F(":"));
   if (minute < 10)
   {
-    Serial.print(F("0"));
-    Serial.print(minute);
+    Serial1.print(F("0"));
+    Serial1.print(minute);
   }
   else
   {
-    Serial.print(minute);
+    Serial1.print(minute);
   }
-  Serial.print(F(":"));
+  Serial1.print(F(":"));
   if (second < 10)
   {
-    Serial.print(F("0"));
-    Serial.print(second);
+    Serial1.print(F("0"));
+    Serial1.print(second);
   }
   else
   {
-    Serial.print(second);
+    Serial1.print(second);
   }
 }
 
@@ -513,17 +513,17 @@ void walkingpaddle()
   {
     if (indicator) //Flip flop between two symbols
     {
-      Serial.print(F("+"));
+      Serial1.print(F("+"));
     }
     else
     {
-      Serial.print(F("*"));
+      Serial1.print(F("*"));
     }
     indicator = !indicator;
   }
   else
   {
-    Serial.print(F(" "));
+    Serial1.print(F(" "));
   }
 }
 
@@ -583,9 +583,9 @@ void compute() //How much do we adjust the output by?
         writePWM2();
         clearLCD();
         cursorHome();
-        Serial.print(F("Sensor Error")); //Let the user know that there is an issue with the sensor
+        Serial1.print(F("Sensor Error")); //Let the user know that there is an issue with the sensor
         cursorLine2();
-        Serial.print(F("No Sensor Input"));
+        Serial1.print(F("No Sensor Input"));
         delay(5000);
         clearLCD();
         cursorHome();
@@ -608,7 +608,7 @@ void compute() //How much do we adjust the output by?
     {
       cursorTopRight(); //Erase error code
       cursorLeft(3);
-      Serial.print(F("  "));
+      Serial1.print(F("  "));
       recentDC = false; //Toggle boolean
     }
   }
@@ -635,20 +635,20 @@ void computedisplay()
 {
   clearDataTopLine(); //Update setpoint on top line
   cursorHome();
-  Serial.print(setpoint);
-  Serial.print(F(" ml/s "));
-  Serial.print(input, 0);
+  Serial1.print(setpoint);
+  Serial1.print(F(" ml/s "));
+  Serial1.print(input, 0);
   if ((setinput) && (!recentDC))
   {
     cursorTopRight();
     cursorLeft(2);
-    Serial.print(F("H")); //Hydrograph indicator
+    Serial1.print(F("H")); //Hydrograph indicator
   }
   if (recentDC)   //Paddlewheel error, display that
   {
     cursorTopRight();
     cursorLeft(4);
-    Serial.print(F("E!"));
+    Serial1.print(F("E!"));
   }
 }
 
@@ -705,8 +705,8 @@ void menuselect()
       setinput = false;
       compute();
       cursorHome();
-      Serial.print(setpoint);
-      Serial.print(F(" Ml/s "));
+      Serial1.print(setpoint);
+      Serial1.print(F(" Ml/s "));
       while (menu == 0)
       {
         check_encoder();
@@ -723,9 +723,9 @@ void menuselect()
     case 1:
       clearLCD();
       cursorHome();
-      Serial.print(F("<     Menu     >"));
+      Serial1.print(F("<     Menu     >"));
       cursorLine2();
-      Serial.print(F("<   Selector   >"));
+      Serial1.print(F("<   Selector   >"));
       while (menu == 1)
       {
         refresh_nolcd();
@@ -737,9 +737,9 @@ void menuselect()
     case 2:
       clearLCD();
       cursorHome();
-      Serial.print(F("<     Zero     >"));
+      Serial1.print(F("<     Zero     >"));
       cursorLine2();
-      Serial.print(F("<     Flow     >"));
+      Serial1.print(F("<     Flow     >"));
       while (menu == 2)
       {
         refresh_nolcd();
@@ -758,9 +758,9 @@ void menuselect()
     case 3:
       clearLCD();
       cursorHome();
-      Serial.print(F("<   Maximize   >"));
+      Serial1.print(F("<   Maximize   >"));
       cursorLine2();
-      Serial.print(F("<     Flow     >"));
+      Serial1.print(F("<     Flow     >"));
       while (menu == 3)
       {
         refresh_nolcd();
@@ -779,9 +779,9 @@ void menuselect()
     case 4:
       clearLCD();
       cursorHome();
-      Serial.print(F("<  Hydrograph  >"));
+      Serial1.print(F("<  Hydrograph  >"));
       cursorLine2();
-      Serial.print(F("<   Selector   >"));
+      Serial1.print(F("<   Selector   >"));
       while (menu == 4)
       {
         refresh_nolcd();
@@ -798,9 +798,9 @@ void menuselect()
     case 5:
       clearLCD();
       cursorHome();
-      Serial.print(F("<  Controller  >"));
+      Serial1.print(F("<  Controller  >"));
       cursorLine2();
-      Serial.print(F("<  Information >"));
+      Serial1.print(F("<  Information >"));
       while (menu == 5)
       {
         refresh_nolcd();
@@ -809,23 +809,23 @@ void menuselect()
         {
           clearLCD();
           cursorHome();
-          Serial.print(F("  K500  Closed  "));
+          Serial1.print(F("  K500  Closed  "));
           cursorLine2();
-          Serial.print(F("Loop  Controller"));
+          Serial1.print(F("Loop  Controller"));
           delay(2500);
 
           clearLCD();
           cursorHome();
-          Serial.print(F("v1.38.0  Written"));
+          Serial1.print(F("v1.38.0  Written"));
           cursorLine2();
-          Serial.print(F("By:  MAP  6/7/18"));
+          Serial1.print(F("By:  MAP  6/7/18"));
           delay(2500);
 
           clearLCD();
           cursorHome();
-          Serial.print(F("      LRRD      "));
+          Serial1.print(F("      LRRD      "));
           cursorLine2();
-          Serial.print(F("WWW.EMRIVER.COM "));
+          Serial1.print(F("WWW.EMRIVER.COM "));
           delay(2500);
           menu = 0;
         }
@@ -847,9 +847,9 @@ void menuselect()
         {
           setinput = false;
           cursorHome();
-          Serial.print(F("<  Hydrograph  >"));
+          Serial1.print(F("<  Hydrograph  >"));
           cursorLine2();
-          Serial.print(F("<   Stopped    >"));
+          Serial1.print(F("<   Stopped    >"));
           delay(2500);
           menu = 0; //Return to main display
           currenthydro[0] = {};
@@ -863,9 +863,9 @@ void menuselect()
     case 7:
       clearLCD();
       cursorHome();
-      Serial.print(F("<     Back     >"));
+      Serial1.print(F("<     Back     >"));
       cursorLine2();
-      Serial.print(F("<              >"));
+      Serial1.print(F("<              >"));
       while (menu == 7)
       {
         refresh_nolcd();
@@ -884,10 +884,10 @@ void menuselect()
       clearLCD();
       cursorHome();
       //Replace text with desired text
-      Serial.print(F("< Flash  Flood >"));
+      Serial1.print(F("< Flash  Flood >"));
       cursorLine2();
       //Replace text with desired text
-      Serial.print(F("<  8  Minutes  >"));
+      Serial1.print(F("<  8  Minutes  >"));
       //Replace 8 with new highest case number
       while (menu == 8)
       {
@@ -914,9 +914,9 @@ void menuselect()
     case 9:
       clearLCD();
       cursorHome();
-      Serial.print(F("< Classic High >"));
+      Serial1.print(F("< Classic High >"));
       cursorLine2();
-      Serial.print(F("< 17.5 Minutes >"));
+      Serial1.print(F("< 17.5 Minutes >"));
       while (menu == 9)
       {
         refresh_nolcd();
@@ -940,9 +940,9 @@ void menuselect()
     case 10:
       clearLCD();
       cursorHome();
-      Serial.print(F("<  Megaflood   >"));
+      Serial1.print(F("<  Megaflood   >"));
       cursorLine2();
-      Serial.print(F("< 16.5 Minutes >"));
+
       while (menu == 10)
       {
         refresh_nolcd();
@@ -966,9 +966,9 @@ void menuselect()
     case 11:
       clearLCD();
       cursorHome();
-      Serial.print(F("<   Classic    >"));
+      Serial1.print(F("<   Classic    >"));
       cursorLine2();
-      Serial.print(F("< 14.5 Minutes >"));
+      Serial1.print(F("< 14.5 Minutes >"));
       while (menu == 11)
       {
         refresh_nolcd();
@@ -992,9 +992,9 @@ void menuselect()
     case 12:
       clearLCD();
       cursorHome();
-      Serial.print(F("< Flash  Flood >"));
+      Serial1.print(F("< Flash  Flood >"));
       cursorLine2();
-      Serial.print(F("< 6.5  Minutes >"));
+      Serial1.print(F("< 6.5  Minutes >"));
       while (menu == 12)
       {
         refresh_nolcd();
@@ -1019,9 +1019,9 @@ void menuselect()
     case 13:
       clearLCD();
       cursorHome();
-      Serial.print(F("<  Regulated   >"));
+      Serial1.print(F("<  Regulated   >"));
       cursorLine2();
-      Serial.print(F("< 19.5 Minutes >"));
+      Serial1.print(F("< 19.5 Minutes >"));
       while (menu == 13)
       {
         refresh_nolcd();
@@ -1061,7 +1061,7 @@ void setup()
   writePWM2();
 
   //LCD Initialization
-  Serial.begin(9600);     //Begin serial for data out to LCD Display
+  Serial1.begin(9600);     //Begin serial for data out to LCD Display
   displayOn();            //Initialize the LCD Display (Without this it displays gibberish upon data recieve.)
   setContrast(40);
   backlightBrightness(6);
@@ -1082,15 +1082,15 @@ void setup()
 
   //Splash Screen
   cursorHome();
-  Serial.print(F("K500 Closed Loop"));
+  Serial1.print(F("K500 Closed Loop"));
   cursorLine2();
-  Serial.print(F("Flow Controller"));
+  Serial1.print(F("Flow Controller"));
   delay(2500);
   clearLCD();
   cursorHome();
-  Serial.print(F("3/8 Paddlewheel"));
+  Serial1.print(F("3/8 Paddlewheel"));
   cursorLine2();
-  Serial.print(F("Software v1.38.0"));
+  Serial1.print(F("Software v1.38.0"));
   delay(2500);
   clearLCD();
 }

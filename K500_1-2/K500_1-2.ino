@@ -170,7 +170,7 @@ bool recentDC = false;                              //Recent disconnect on paddl
 //Detailed instructions are in the case creation
 const uint8_t flashy[] = { 40, 66, 105, 100, 90, 85, 82, 76, 66, 60, 58, 50, 45, 40, 25, 25 }; //8 Minutes
 const uint8_t classichigh[] = { 29, 38, 44, 54, 58, 67, 74, 80, 91, 102, 110, 117, 115, 113, 102, 99, 93, 84, 82, 80, 78, 73, 69, 66, 62, 58, 55, 51, 47, 44, 40, 37, 33, 25, 25 }; //17.5 Minutes
-const uint8_t megaflood[] = { 40, 68, 90, 110, 130, 150, 160, 170, 170, 165, 160, 155, 150, 146, 139, 132, 125, 121, 113, 107, 96, 89, 82, 75, 68, 60, 53, 51, 51, 45 }; //16.5 Minutes
+const uint8_t megaflood[] = { 40, 68, 90, 110, 130, 150, 160, 170, 170, 165, 160, 155, 150, 146, 139, 132, 125, 121, 113, 107, 96, 89, 82, 75, 68, 60, 53, 51, 51, 45 }; //15 Minutes
 const uint8_t classic[] = { 25, 30, 48, 56, 66, 82, 95, 106, 92, 80, 75, 72, 69, 65, 62, 60, 57, 55, 52, 50, 47, 45, 41, 38, 35, 31, 25, 25, 25 }; //14.5 Minutes
 const uint8_t flashyhigh[] = { 25, 126, 160, 155, 120, 102, 80, 60, 50, 40, 30, 25, 25 }; //6.5 Minutes
 const uint8_t regulated[] = { 40, 50, 50, 70, 70, 70, 70, 70, 70, 50, 50, 70, 70, 70, 70, 70, 50, 50, 50, 50, 70, 70, 70, 70, 50, 50, 50, 50, 50, 70, 70, 70, 70, 50, 50, 50, 70, 70, 70 }; //19.5 Minutes
@@ -942,7 +942,7 @@ void menuselect()
       cursorHome();
       Serial.print(F("<  Megaflood   >"));
       cursorLine2();
-      Serial.print(F("< 16.5 Minutes >"));
+      Serial.print(F("<  15 Minutes  >"));
       while (menu == 10)
       {
         refresh_nolcd();

@@ -36,7 +36,6 @@
   Changed P to P scheduling where P values are higher at high flow and lower at low flow
   Recalculated volumetric curve for encoder count vs ml/s and duration vs ml/s
   Added time since last duration reading, this is used to switch back and forth between encoder count regression and P control loop
-  0 ml/s is explicitly stated
   Walking paddle character fixed
   Exponential smoothing was used to reduce raw duration reading volatility
   Encoder click timing was stepwise, now it is continuously variable

@@ -35,13 +35,8 @@
   Removed I and D in PID loop
   Changed P to P scheduling where P values are higher at high flow and lower at low flow
   Recalculated volumetric curve for encoder count vs ml/s and duration vs ml/s
-  Duration vs ml/s is only calculated using values from ~55ml/s - ~185ml/s
-  Encoder count vs ml/s is only calculated using values from 0 ml/s - ~185ml/s
   Added time since last duration reading, this is used to switch back and forth between encoder count regression and P control loop
-  All flows below 55 ml/s are described as less than 55ml/s rather than explicitly stated, this prevents user confusion. They aren't necessarily accurate in that range
-  0 ml/s is explicitly stated
   Walking paddle character fixed
-  P control loop only runs when setpoint >= 55ml/s and time since last paddlewheel reading is < 400 ms.
   Exponential smoothing was used to reduce raw duration reading volatility
   Encoder click timing was stepwise, now it is continuously variable
   Catch case for setpoint less than 1 ml, output zeroed

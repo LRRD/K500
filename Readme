@@ -1,0 +1,11 @@
+The K500 is a closed loop flow controller with range of 25 - 210 ml/s for use in our Emriver models. 
+It drives our GRI pump by passing through positive voltage and pulsing pump power ground voltage.
+The PWM drives a MOSFET, and the pump control signal is a solid 5V to indicate full speed to the built-in controller.
+It receives feedback from a paddlewheel sensor in the form of a digital interrupt to monitor realtime pump speed.
+The incoming real pump speed is smoothed out using a first order alpha filter.
+The closed loop is a P control one, with gain scheduling, but we may consider I & D additions in the future.
+Also, a piecewise function equating pump speed (0-65,535) to ml/s real flow rate is programmed in the form of 3 linear functions.
+The piecewise function informs the P control loop as to the magnitude of the rate to change the pump speed to quickly settle on desired flow setpoint.
+Due to adding in these physical measurements used in the piecewise function, it has ideal operation around the same head values that were present when those readings were taken.
+If you drastically increase or decrease the head between the pump and the output, the closed loop may be prone to overshoot, or slow settling time.
+The K500 has pre-defined hydrographs which automatically change the setpoint every 30s according the programmed flow profile, but if the user wants, they can define their own and upload the changes to the K500 using a USBtinyISP or other programming device that uses a standard 2x3 pin ICSP header.
